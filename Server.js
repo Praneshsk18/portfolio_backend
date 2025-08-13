@@ -1,45 +1,41 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
+const bodyParser = require("body-parser");
+
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
 
-// MongoDB Connection
-const MONGODB_URI =
-  "mongodb+srv://praneshdn816:lm30atpsg@cluster0.lxvoa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((e) => console.error("Error connecting to MongoDB:", e));
+}
+));
+app.use(bodyParser.json());
 
-// Define the schema and model for messages
-const msgschema = new mongoose.Schema(
-  {
-    name: String,
-    email: String,
-    msg: String,
-  },
-  { collection: "contact" } // Explicitly specify the collection name
-);
-
-const messagemodel = mongoose.model("Message", msgschema); // Corrected model definition
-
-// POST endpoint to add a new message
 app.post("/api/newmessage", async (req, res) => {
   const { name, email, msg } = req.body;
 
-  // Validate input
   if (!name || !email || !msg) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+      const transporter = nodemailer.createTransport({
+      service:"gmail",
+      auth:{
+        user:"praneshsenthilkumar18@gmail.com",
+        pass:"hvryilzjsajswzjn"
+      }
+    })
+
+    const mailOptions = {
+      from:email,
+      to:"praneshsenthilkumar18@gmail.com",
+      subject:`New Message from ${name}`,
+      text:msg
+    } 
+
   try {
-    const newmsg = new messagemodel({ name, email, msg });
-    await newmsg.save();
-    res.status(201).json(newmsg); // 201 = Created
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: "Email sent successfully" });
   } catch (error) {
     console.error("Error adding message:", error);
     res.status(500).json({ error: "Failed to add message" });
